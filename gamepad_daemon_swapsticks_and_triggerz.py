@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+
 from evdev import InputDevice, UInput, ecodes as e
 from dpad_util import emit_dpad_buttons
+from trigger_util import merged_triggers
+
 
 DEVICE_PATH = "/dev/input/event11"  # Change this to your F710 device
 
@@ -19,7 +22,7 @@ capabilities = {
         (e.ABS_Y,   (0, -32768, 32767, 0, 0, 0)),  # Left stick Y
         (e.ABS_RX,  (0, -32768, 32767, 0, 0, 0)),  # Right stick X
         (e.ABS_RY,  (0, -32768, 32767, 0, 0, 0)),  # Right stick Y
-        (e.ABS_Z,   (0, -32767, 32767, 0, 0, 0)),  # Combined triggers axis
+        (e.ABS_MISC, (0, -32767, 32767, 0, 0, 0)), # Merged triggers as "mystery" axis
         (e.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),        # D-pad X
         (e.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),        # D-pad Y
     ]
@@ -28,8 +31,8 @@ capabilities = {
 def main():
     input_dev = InputDevice(DEVICE_PATH)
     print(f"Reading from: {input_dev.name}")
-    output_dev = UInput(capabilities, name="F710-SwapSticks-TriggerZ", bustype=e.BUS_USB)
-    print("Created virtual device: F710-SwapSticks-TriggerZ")
+    output_dev = UInput(capabilities, name="F710-SwapSticks+TriggerMystery", bustype=e.BUS_USB)
+    print("Created virtual device: F710-SwapSticks+TriggerMystery")
 
     left_trigger = 0
     right_trigger = 0
@@ -47,7 +50,6 @@ def main():
                     output_dev.write(e.EV_ABS, e.ABS_X, event.value)
                 elif event.code == e.ABS_RY:
                     output_dev.write(e.EV_ABS, e.ABS_Y, event.value)
-                # Combine triggers into single Z axis
                 elif event.code == e.ABS_Z:
                     left_trigger = event.value
                 elif event.code == e.ABS_RZ:
@@ -60,16 +62,12 @@ def main():
                     output_dev.write(event.type, event.code, event.value)
                     output_dev.syn()
                     continue
-                # Only emit combined Z if a trigger event
+                # Only emit merged axis if a trigger event
                 if event.code in (e.ABS_Z, e.ABS_RZ):
-                    if right_trigger > 0:
-                        z_value = int((right_trigger / 255.0) * 32767)
-                    elif left_trigger > 0:
-                        z_value = -int((left_trigger / 255.0) * 32767)
-                    else:
-                        z_value = 0
-                    output_dev.write(e.EV_ABS, e.ABS_Z, z_value)
-            else:
+                    merged_value = merged_triggers(left_trigger, right_trigger)
+                    output_dev.write(e.EV_ABS, e.ABS_MISC, merged_value)
+            elif event.type == e.EV_KEY:
+                # Forward all button events
                 output_dev.write(event.type, event.code, event.value)
             output_dev.syn()
     except KeyboardInterrupt:

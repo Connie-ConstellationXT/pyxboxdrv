@@ -2,6 +2,7 @@
 
 from evdev import InputDevice, UInput, ecodes as e
 from dpad_util import emit_dpad_buttons
+from trigger_util import merged_triggers
 
 # Hardcode your device path here
 DEVICE_PATH = "/dev/input/event11"  # Change this to your F710 device
@@ -53,13 +54,8 @@ def main():
                     output_dev.write(event.type, event.code, event.value)
                     output_dev.syn()
                     continue
-                # Combine triggers into single "mystery" axis (ABS_MISC)
-                if right_trigger > 0:
-                    merged_value = int((right_trigger / 255.0) * 32767)
-                elif left_trigger > 0:
-                    merged_value = -int((left_trigger / 255.0) * 32767)
-                else:
-                    merged_value = 0
+                # Combine triggers into single "mystery" axis (ABS_MISC) using util
+                merged_value = merged_triggers(left_trigger, right_trigger)
                 output_dev.write(e.EV_ABS, e.ABS_MISC, merged_value)
             elif event.type == e.EV_KEY:
                 # Forward all button events
