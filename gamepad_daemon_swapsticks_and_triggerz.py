@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from evdev import InputDevice, UInput, ecodes as e
+from dpad_util import emit_dpad_buttons
 
 DEVICE_PATH = "/dev/input/event11"  # Change this to your F710 device
 
@@ -32,6 +33,7 @@ def main():
 
     left_trigger = 0
     right_trigger = 0
+    dpad_state = {e.BTN_DPAD_UP: 0, e.BTN_DPAD_DOWN: 0, e.BTN_DPAD_LEFT: 0, e.BTN_DPAD_RIGHT: 0}
 
     try:
         for event in input_dev.read_loop():
@@ -48,10 +50,12 @@ def main():
                 # Combine triggers into single Z axis
                 elif event.code == e.ABS_Z:
                     left_trigger = event.value
-                    # Don't forward original
                 elif event.code == e.ABS_RZ:
                     right_trigger = event.value
-                    # Don't forward original
+                elif event.code in (e.ABS_HAT0X, e.ABS_HAT0Y):
+                    output_dev.write(e.EV_ABS, event.code, event.value)
+                    emit_dpad_buttons(output_dev, dpad_state, event.code, event.value)
+                    continue
                 else:
                     output_dev.write(event.type, event.code, event.value)
                     output_dev.syn()

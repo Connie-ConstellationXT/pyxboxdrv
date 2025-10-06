@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from evdev import InputDevice, UInput, ecodes as e
+from dpad_util import emit_dpad_buttons
 
 DEVICE_PATH = "/dev/input/event11"  # Change this to your F710 device
 
@@ -18,8 +19,8 @@ capabilities = {
         (e.ABS_Y,   (0, -32768, 32767, 0, 0, 0)),  # Left stick Y
         (e.ABS_RX,  (0, -32768, 32767, 0, 0, 0)),  # Right stick X
         (e.ABS_RY,  (0, -32768, 32767, 0, 0, 0)),  # Right stick Y
-        (e.ABS_Z,   (0, -32767, 32767, 0, 0, 0)),  # Left trigger
-        (e.ABS_RZ,  (0, -32767, 32767, 0, 0, 0)),  # Right trigger
+        (e.ABS_Z,   (0, 0, 255, 0, 0, 0)),         # Left trigger (0-255)
+        (e.ABS_RZ,  (0, 0, 255, 0, 0, 0)),         # Right trigger (0-255)
         (e.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),        # D-pad X
         (e.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),        # D-pad Y
     ]
@@ -31,10 +32,11 @@ def main():
     output_dev = UInput(capabilities, name="F710-SwapSticks", bustype=e.BUS_USB)
     print("Created virtual device: F710-SwapSticks")
 
+    dpad_state = {e.BTN_DPAD_UP: 0, e.BTN_DPAD_DOWN: 0, e.BTN_DPAD_LEFT: 0, e.BTN_DPAD_RIGHT: 0}
+
     try:
         for event in input_dev.read_loop():
             if event.type == e.EV_ABS:
-                # Swap left and right stick axes
                 if event.code == e.ABS_X:
                     output_dev.write(e.EV_ABS, e.ABS_RX, event.value)
                 elif event.code == e.ABS_Y:
@@ -43,6 +45,9 @@ def main():
                     output_dev.write(e.EV_ABS, e.ABS_X, event.value)
                 elif event.code == e.ABS_RY:
                     output_dev.write(e.EV_ABS, e.ABS_Y, event.value)
+                elif event.code in (e.ABS_HAT0X, e.ABS_HAT0Y):
+                    output_dev.write(e.EV_ABS, event.code, event.value)
+                    emit_dpad_buttons(output_dev, dpad_state, event.code, event.value)
                 else:
                     output_dev.write(event.type, event.code, event.value)
             else:
