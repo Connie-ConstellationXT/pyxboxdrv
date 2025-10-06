@@ -15,14 +15,14 @@ capabilities = {
         e.BTN_DPAD_UP, e.BTN_DPAD_DOWN, e.BTN_DPAD_LEFT, e.BTN_DPAD_RIGHT
     ],
     e.EV_ABS: [
-        (e.ABS_X,   (0, -32768, 32767, 0, 0, 0)),  # Left stick X
-        (e.ABS_Y,   (0, -32768, 32767, 0, 0, 0)),  # Left stick Y
-        (e.ABS_RX,  (0, -32768, 32767, 0, 0, 0)),  # Right stick X
-        (e.ABS_RY,  (0, -32768, 32767, 0, 0, 0)),  # Right stick Y
-        (e.ABS_Z,   (0, 0, 255, 0, 0, 0)),         # Left trigger (0-255)
-        (e.ABS_RZ,  (0, 0, 255, 0, 0, 0)),         # Right trigger (0-255)
-        (e.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),        # D-pad X
-        (e.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),        # D-pad Y
+        (e.ABS_X,   (0, -32768, 32767, 16, 128, 0)),  # Left stick X (fuzz=16, flat=128)
+        (e.ABS_Y,   (0, -32768, 32767, 16, 128, 0)),  # Left stick Y (fuzz=16, flat=128)
+        (e.ABS_RX,  (0, -32768, 32767, 16, 128, 0)),  # Right stick X (fuzz=16, flat=128)
+        (e.ABS_RY,  (0, -32768, 32767, 16, 128, 0)),  # Right stick Y (fuzz=16, flat=128)
+        (e.ABS_Z,   (0, 0, 255, 0, 0, 0)),           # Left trigger (0-255)
+        (e.ABS_RZ,  (0, 0, 255, 0, 0, 0)),           # Right trigger (0-255)
+        (e.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),          # D-pad X
+        (e.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),          # D-pad Y
     ]
 }
 
@@ -36,6 +36,7 @@ def main():
 
     try:
         for event in input_dev.read_loop():
+            
             if event.type == e.EV_ABS:
                 if event.code == e.ABS_X:
                     output_dev.write(e.EV_ABS, e.ABS_RX, event.value)
