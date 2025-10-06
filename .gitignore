@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+
+# VS Code settings
+.vscode/
+
+# Nix build artifacts
+result/
+*.drv
+*.out
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python egg files
+dist/
+build/
+*.egg-info/
+
+# Backup files
+*~
+*.swp
+*.swo
