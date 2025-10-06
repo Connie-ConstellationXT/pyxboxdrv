@@ -6,7 +6,7 @@ from dpad_util import emit_dpad_buttons
 # Hardcode your device path here
 DEVICE_PATH = "/dev/input/event11"  # Change this to your F710 device
 
-# Explicit xinput-like capabilities with combined trigger axis
+# Minimal, generic HOTAS-style device: only sticks, dpad, and merged triggers as ABS_MISC
 capabilities = {
     e.EV_KEY: [
         e.BTN_A, e.BTN_B, e.BTN_X, e.BTN_Y,
@@ -21,17 +21,18 @@ capabilities = {
         (e.ABS_Y,   (0, -32768, 32767, 0, 0, 0)),  # Left stick Y
         (e.ABS_RX,  (0, -32768, 32767, 0, 0, 0)),  # Right stick X
         (e.ABS_RY,  (0, -32768, 32767, 0, 0, 0)),  # Right stick Y
-        (e.ABS_Z,   (0, -32767, 32767, 0, 0, 0)),  # Combined triggers axis
+        (e.ABS_MISC, (0, -32767, 32767, 0, 0, 0)), # Merged triggers as "mystery" axis
         (e.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),        # D-pad X
         (e.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),        # D-pad Y
     ]
 }
 
+
 def main():
     input_dev = InputDevice(DEVICE_PATH)
     print(f"Reading from: {input_dev.name}")
-    output_dev = UInput(capabilities, name="F710-TriggerAsZAxis", bustype=e.BUS_USB)
-    print("Created virtual device: F710-TriggerAsZAxis")
+    output_dev = UInput(capabilities, name="Merged Trigger Axis (Generic HOTAS)", bustype=e.BUS_USB)
+    print("Created virtual device: Merged Trigger Axis (Generic HOTAS)")
 
     left_trigger = 0
     right_trigger = 0
@@ -52,15 +53,16 @@ def main():
                     output_dev.write(event.type, event.code, event.value)
                     output_dev.syn()
                     continue
-                # Combine triggers into single Z axis
+                # Combine triggers into single "mystery" axis (ABS_MISC)
                 if right_trigger > 0:
-                    z_value = int((right_trigger / 255.0) * 32767)
+                    merged_value = int((right_trigger / 255.0) * 32767)
                 elif left_trigger > 0:
-                    z_value = -int((left_trigger / 255.0) * 32767)
+                    merged_value = -int((left_trigger / 255.0) * 32767)
                 else:
-                    z_value = 0
-                output_dev.write(e.EV_ABS, e.ABS_Z, z_value)
-            else:
+                    merged_value = 0
+                output_dev.write(e.EV_ABS, e.ABS_MISC, merged_value)
+            elif event.type == e.EV_KEY:
+                # Forward all button events
                 output_dev.write(event.type, event.code, event.value)
             output_dev.syn()
     except KeyboardInterrupt:
